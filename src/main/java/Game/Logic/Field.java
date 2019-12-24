@@ -125,7 +125,7 @@ public class Field {
     public static void addLinePath(Set<LinePath> set, LinePath newLP) {
         for (LinePath lp : set) {
             if (lp.equals(newLP))
-                return;;
+                return;
         }
         set.add(newLP);
     }
@@ -148,8 +148,8 @@ public class Field {
 ////                graph.getVertex(new Vector2i(15, 11), new Vector2i(16, 11))
 //        ));
 
-        debugPath(findCellWayLens(
-            new Vector2i(7, 2),
+        debugPath(generateCellPath(
+            new Vector2i(1, 2),
             new Vector2i(3, 24)
         ));
     }
@@ -229,40 +229,64 @@ public class Field {
         return list;
     }
 
-    private List<Vector2i> findCellWayLens(Vector2i start, Vector2i exit) {
+    private List<Vector2i> generateCellPath(Vector2i start, Vector2i exit) {
+        List<Vector2i> ans = new LinkedList<>();
+
+        if (zones[start.y / zoneSize][start.x / zoneSize].id == zones[exit.y / zoneSize][exit.x / zoneSize].id) {
+            ans.addAll(generateStartCellPathInSingleZone(start, exit));
+        } else {
+            Graph.Vertex s = generateStartCellPath(start, ans);
+
+            List<Vector2i> ans2 = new LinkedList<>();
+            Graph.Vertex e = generateStartCellPath(exit, ans2);
+
+            ans.addAll(generateGraphPath(s, e));
+            ans.addAll(ans2);
+        }
+
+        return ans;
+    }
+
+    private List<Vector2i> generateStartCellPathInSingleZone(Vector2i start, Vector2i exit) {
+        return findPathInTable(generatePathTable(start.x % zoneSize, start.y % zoneSize), exit);
+    }
+
+    private Graph.Vertex generateStartCellPath(Vector2i start, List<Vector2i> list) {
         int zy = start.y / zoneSize;
         int zx = start.x / zoneSize;
         int zoneId = zones[zy][zx].id;
-        Map<Vector2i, Integer> map = new HashMap<>();
+        Map<Graph.Vertex, Integer> map = new HashMap<>();
 
-        int[][] mas = generatePathTable(start.x % zoneSize, start.y % zoneSize);
-
-        if (zones[start.y / zoneSize][start.x / zoneSize].id == zones[exit.y / zoneSize][exit.x / zoneSize].id) {
-            return findPathInTable(mas, exit);
-        }
+        int[][] mas = generatePathTable(start.x, start.y);
 
         for (Graph.Vertex i : zones[zy][zx].exits) {
             Vector2i posI = i.getPosByZone(zoneId);
 
+            int sy = zy * zoneSize;
+            int sx = zx *zoneSize;
+
             for (int y = 0; y < zoneSize; y++) {
-                if (posI.equals(start.x, start.y + y)) {
-                    map.put(posI, mas[y][0] - 2);
+                if (posI.equals(sx, sy + y)) {
+                    map.put(i, mas[y][0] - 2);
                 }
-                if (posI.equals(start.x + zoneSize - 1, start.y + y)) {
-                    map.put(posI, mas[y][zoneSize - 1] - 2);
+                if (posI.equals(sx + zoneSize - 1, sy + y)) {
+                    map.put(i, mas[y][zoneSize - 1] - 2);
                 }
             }
+            System.out.println("asd");
             for (int x = 1; x < zoneSize - 1; x++) {
-                if (posI.equals(start.x + x, start.y)) {
-                    map.put(posI, mas[0][x] - 2);
+                if (posI.equals(sx + x, sy * zoneSize)) {
+                    map.put(i, mas[0][x] - 2);
                 }
-                if (posI.equals(start.x + x, start.y + zoneSize - 1)) {
-                    map.put(posI, mas[zoneSize - 1][x] - 2);
+                if (posI.equals(sx + x, sy + zoneSize - 1)) {
+                    map.put(i, mas[zoneSize - 1][x] - 2);
                 }
             }
         }
 
-        return findPathInTable(mas, Collections.min(map.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey());
+        Graph.Vertex ans = Collections.min(map.entrySet(), Comparator.comparingInt(Map.Entry::getValue)).getKey();
+        list.addAll(findPathInTable(mas, ans.getPosByZone(zoneId)));
+        return ans;
     }
 
     private void prepareZones() {

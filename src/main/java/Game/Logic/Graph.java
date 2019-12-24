@@ -14,11 +14,25 @@ public class Graph {
         private int zoneA;
         private int zoneB;
 
+        Vertex() {}
         Vertex(Vector2i posA, int zoneA, Vector2i posB, int zoneB) {
             this.posA = posA;
             this.zoneA = zoneA;
             this.posB = posB;
             this.zoneB = zoneB;
+        }
+        Vertex(Vertex v) {
+            this.posA = v.posA;
+            this.zoneA = v.zoneA;
+            this.posB = v.posB;
+            this.zoneB = v.zoneB;
+        }
+
+        void setVertex(Vertex v) {
+            this.posA = v.posA;
+            this.zoneA = v.zoneA;
+            this.posB = v.posB;
+            this.zoneB = v.zoneB;
         }
 
         static int getMutualZone(Vertex a, Vertex b){
