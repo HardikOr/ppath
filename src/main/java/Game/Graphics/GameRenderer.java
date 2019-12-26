@@ -3,7 +3,7 @@ package Game.Graphics;
 import Game.Logic.Entity;
 import Game.Logic.Field;
 import Game.Logic.Graph;
-import Game.Utilities.Color;
+import Game.Utilities.Utils;
 import org.joml.Vector2d;
 import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -27,13 +27,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class GameRenderer {
     private static long window;
-    private static int H = 800;
-    private static int W = 1400;
-    private static double aspectRatio;
     private static Map<Integer, Texture> textureMap;
-
-    public static int getH() { return H; }
-    public static int getW() { return W; }
 
     public static int getKey(int key) { return glfwGetKey(window, key); }
     public static int getMouseKey(int key) { return glfwGetMouseButton(window, key); }
@@ -46,7 +40,6 @@ public class GameRenderer {
     public static void clearWindow() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
         glClearColor(1, 1, 1, 1);
-//        glColor4d(0, 1, 0,0);
     }
 
     public static void init() {
@@ -64,7 +57,7 @@ public class GameRenderer {
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will not be resizable
 
         // Create the window
-        window = glfwCreateWindow(W, H, "No pain, no gain", NULL, NULL);
+        window = glfwCreateWindow(Utils.W, Utils.H, "No pain, no gain", NULL, NULL);
         if ( window == NULL )
             throw new RuntimeException("Failed to create the GLFW window");
 
@@ -80,8 +73,7 @@ public class GameRenderer {
             GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
             // Center the window
-            glfwSetWindowPos(
-                    window,
+            glfwSetWindowPos(window,
                     (vidmode.width() - pWidth.get(0)) / 2,
                     (vidmode.height() - pHeight.get(0)) / 2
             );
@@ -95,7 +87,6 @@ public class GameRenderer {
         // Make the window visible
         glfwShowWindow(window);
 
-        aspectRatio = (double) W / H;
         GL.createCapabilities();
 
         glEnable(GL_BLEND);
@@ -123,7 +114,7 @@ public class GameRenderer {
         double[] cursor_x = new double[1], cursor_y = new double[1];
 
         glfwGetCursorPos(GameRenderer.window, cursor_x, cursor_y);
-        return new Vector2d((cursor_x[0] / W * 2 - 1), (1 - cursor_y[0] / H * 2));
+        return new Vector2d((cursor_x[0] / Utils.H * 2 - 1), (1 - cursor_y[0] / Utils.H * 2));
     }
 
     public static void loadTextures() {
@@ -150,14 +141,14 @@ public class GameRenderer {
     }
 
     private static void entityVertex2d(double x, double y) {
-        glVertex2d(x / GameRenderer.getW() * 2, y / GameRenderer.getH() * 2);
+        glVertex2d(x / Utils.W * 2, y / Utils.H * 2);
     }
 
     public static void renderEntity(Entity entity) {
         final int SEGEMEMTS = 30;
 
         glShadeModel(GL_SMOOTH);
-        glColor4dv(Color.cellColor.get(entity.getState()));
+        glColor4dv(Utils.Color.cellColor.get(entity.getState()));
 
         glBegin(GL_TRIANGLE_FAN);
         entityVertex2d(entity.getX(), entity.getY());
@@ -165,7 +156,8 @@ public class GameRenderer {
         for (int i = 0; i < SEGEMEMTS; i++) {
             double angle = Math.PI * 2 * i / SEGEMEMTS;
 
-            entityVertex2d(entity.getX() + Math.cos(angle) * entity.getR(), entity.getY() + Math.sin(angle) * entity.getR());
+            entityVertex2d(entity.getX() + Math.cos(angle) * entity.getR(),
+                    entity.getY() + Math.sin(angle) * entity.getR());
         }
 
         entityVertex2d(entity.getX() + entity.getR(), entity.getY());
@@ -173,18 +165,18 @@ public class GameRenderer {
     }
 
     private static void fieldVertex(double x, double y) {
-        glVertex2d((x + Field.getXSize())  / W - 1, -(y + Field.getYSize()) / H + 1);
+        glVertex2d((x + Utils.xSize) / Utils.W - 1, -(y + Utils.ySize) / Utils.H + 1);
     }
 
     public static void renderBackground(boolean isDebugMode, boolean isDebugModePath) {
-        for (int zY = 0; zY < Field.yZones; zY++) {
-            for (int zX = 0; zX < Field.xZones; zX++) {
-                for (int posY = 0; posY < Field.zoneSize; posY++) {
-                    for (int posX = 0; posX < Field.zoneSize; posX++) {
-                        int x = zX * Field.zoneSize + posX;
-                        int y = zY * Field.zoneSize + posY;
+        for (int zY = 0; zY < Utils.yZones; zY++) {
+            for (int zX = 0; zX < Utils.xZones; zX++) {
+                for (int posY = 0; posY < Utils.zoneSize; posY++) {
+                    for (int posX = 0; posX < Utils.zoneSize; posX++) {
+                        int x = zX * Utils.zoneSize + posX;
+                        int y = zY * Utils.zoneSize + posY;
 
-                        if (Field.getZone(zX, zY).getCell(posX, posY).getState() == Field.STATE.CLEAR)
+                        if (Field.getZone(zX, zY).getCell(posX, posY) == Field.CELL.CLEAR)
                             bindTexture(0);
                         else
                             bindTexture(1);
@@ -200,7 +192,7 @@ public class GameRenderer {
                                     glColor4d(1, 1, 0, 1);
                             }
 
-                            if (Field.getZone(zX, zY).getCell(posX, posY).getState() == Field.STATE.OBSTICLE)
+                            if (Field.getZone(zX, zY).getCell(posX, posY) == Field.CELL.OBSTICLE)
                                 glColor4d(0.3, 0.3, 0.3, 1);
 
                             if (Field.getGraph().inV(new Vector2i(x, y))) {
@@ -214,16 +206,16 @@ public class GameRenderer {
 
                         glBegin(GL_QUADS);
                         glTexCoord2d(0, 0);
-                        fieldVertex(Field.getXSize() * x * 2 - Field.getXSize(), y * Field.getYSize() * 2 + Field.getYSize());
+                        fieldVertex(Utils.xSize * x * 2 - Utils.xSize, y * Utils.ySize * 2 + Utils.ySize);
 
                         glTexCoord2d(0, 1);
-                        fieldVertex(x * Field.getXSize() * 2 + Field.getXSize(), y * Field.getYSize() * 2 + Field.getYSize());
+                        fieldVertex(x * Utils.xSize * 2 + Utils.xSize, y * Utils.ySize * 2 + Utils.ySize);
 
                         glTexCoord2d(1, 1);
-                        fieldVertex(x * Field.getXSize() * 2 + Field.getXSize(), y * Field.getYSize() * 2 - Field.getYSize());
+                        fieldVertex(x * Utils.xSize * 2 + Utils.xSize, y * Utils.ySize * 2 - Utils.ySize);
 
                         glTexCoord2d(1, 0);
-                        fieldVertex(x * Field.getXSize() * 2 - Field.getXSize(), y * Field.getYSize() * 2 - Field.getYSize());
+                        fieldVertex(x * Utils.xSize * 2 - Utils.xSize, y * Utils.ySize * 2 - Utils.ySize);
 
                         glEnd();
                         glDisable(GL_TEXTURE_2D);
@@ -238,7 +230,7 @@ public class GameRenderer {
 //    }
 
     public static void renderMouseBorder(Vector2d start, Vector2d cur){
-        glColor4dv(Color.mouseBorder);
+        glColor4dv(Utils.Color.mouseBorder);
 
         glLineWidth(3);
         glBegin(GL_LINE_LOOP);

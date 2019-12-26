@@ -1,6 +1,7 @@
 package Game.Logic;
 
 import Game.Graphics.GameRenderer;
+import Game.Utilities.Utils;
 import org.joml.Vector2d;
 import org.joml.Vector2i;
 
@@ -10,10 +11,9 @@ import java.util.ListIterator;
 
 public class Entity {
     public enum STATE{
-        STANDING,
-        MOVING,
-        PLAYERED
-    };
+        CHILL,
+        PLAYER
+    }
 
     private static int id = 0;
 
@@ -43,7 +43,7 @@ public class Entity {
         this.pos = pos;
         radius = r;
         entityId = id++;
-        state = STATE.STANDING;
+        state = STATE.CHILL;
         velocity = speed;
         path = new LinkedList<>();
     }
@@ -79,10 +79,10 @@ public class Entity {
     public STATE getState() { return state; }
 
     public boolean inRange(Vector2d a, Vector2d b) {
-        return (Double.min(a.x, b.x) * GameRenderer.getW() / 2 <= pos.x)
-                && (pos.x <= Double.max(a.x, b.x) * GameRenderer.getW() / 2)
-                && (Double.min(a.y, b.y) * GameRenderer.getH() / 2 <= pos.y)
-                && (pos.y <= Double.max(a.y, b.y) * GameRenderer.getH() / 2);
+        return (Double.min(a.x, b.x) * Utils.W / 2 <= pos.x)
+                && (pos.x <= Double.max(a.x, b.x) * Utils.W / 2)
+                && (Double.min(a.y, b.y) * Utils.H / 2 <= pos.y)
+                && (pos.y <= Double.max(a.y, b.y) * Utils.H / 2);
     }
 
     public List<Vector2i> getPath() { return path; }
@@ -92,8 +92,8 @@ public class Entity {
     }
 
     public void setPosFromMouse(Vector2d mouse) {
-        pos.x = mouse.x * GameRenderer.getW() / 2;
-        pos.y = mouse.y * GameRenderer.getH() / 2;
+        pos.x = mouse.x * Utils.W / 2;
+        pos.y = mouse.y * Utils.H / 2;
 
         isMoving = false;
         path = new LinkedList<>();

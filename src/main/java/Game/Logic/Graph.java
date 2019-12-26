@@ -47,7 +47,7 @@ public class Graph {
         }
         Vector2i getPosByZone(int zone) {
             if (zone == zoneA) return posA;
-            else if ((zone == zoneB)) return posB;
+            if (zone == zoneB) return posB;
             throw new NoSuchElementException();
         }
         Vector2i getPosBySecondZone(int zone) {
@@ -108,12 +108,12 @@ public class Graph {
     private Map<Vertex, Set<Edge>> connections;
 
     Graph() {
-        vertices = new HashSet<Vertex>();
-        connections = new HashMap<Vertex, Set<Edge>>();
+        vertices = new HashSet<>();
+        connections = new HashMap<>();
     }
 
     private Set<Vertex> getNei(Vertex v) {
-        Set<Vertex> ans = new HashSet<Vertex>();
+        Set<Vertex> ans = new HashSet<>();
 
         connections.get(v).forEach(it -> ans.add(it.end));
 
@@ -154,11 +154,11 @@ public class Graph {
     }
 
     void addConnection(Vertex start, Vertex end, int weight) {
-        Set<Edge> aV = connections.getOrDefault(start, new HashSet<Edge>());
+        Set<Edge> aV = connections.getOrDefault(start, new HashSet<>());
         aV.add(new Edge(weight, start, end));
         connections.put(start, aV);
 
-        Set<Edge> bV = connections.getOrDefault(end, new HashSet<Edge>());
+        Set<Edge> bV = connections.getOrDefault(end, new HashSet<>());
         bV.add(new Edge(weight, end, start));
         connections.put(end, bV);
     }
@@ -172,16 +172,16 @@ public class Graph {
     }
 
     public Deque<Vertex> findShortPath(Vertex begin, Vertex end) { // Dijkstra
-        Map<Vertex, VertexAdd> map = new HashMap<Vertex, VertexAdd>();
+        Map<Vertex, VertexAdd> map = new HashMap<>();
         for (Vertex i : vertices) {
             map.put(i, new VertexAdd(i, Integer.MAX_VALUE, null));
         }
 
-        Set<Vertex> visited = new HashSet<Vertex>();
+        Set<Vertex> visited = new HashSet<>();
         VertexAdd beg = map.get(begin);
         beg.distance = 0;
 
-        Queue<VertexAdd> queue = new PriorityQueue<VertexAdd>();
+        Queue<VertexAdd> queue = new PriorityQueue<>();
         queue.add(beg);
 
         while (!queue.isEmpty()) {
@@ -204,7 +204,7 @@ public class Graph {
             }
         }
 
-        Deque<Vertex> ans = new ArrayDeque<Vertex>();
+        Deque<Vertex> ans = new ArrayDeque<>();
         Vertex cur = end;
         while (cur != null) {
             ans.addLast(cur);

@@ -4,10 +4,7 @@ import Game.Graphics.GameRenderer;
 import Game.Logic.Entity;
 import Game.Logic.Field;
 import org.joml.Vector2d;
-import org.lwjgl.system.CallbackI;
-import org.lwjgl.system.windows.MOUSEINPUT;
 
-import java.lang.reflect.GenericArrayType;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -17,21 +14,20 @@ import static org.lwjgl.glfw.GLFW.*;
 public class Main {
     private Vector2d cursorPosStart;
     private Vector2d cursorPosCurrent;
-    private boolean isMouseSet = false;
-    private boolean isDebugMode = false;
-    private boolean isXPressed = false;
-    private boolean isDebugModePath = false;
-    private boolean isCPressed = false;
 
+    private boolean isDebugMode = false;
+    private boolean isDebugModePath = false;
+
+    private boolean isMouseLeftPressed = false;
+    private boolean isMouseMiddlePressed = false;
+    private boolean isMouseRightPressed = false;
+    private boolean isSPressed = false;
+    private boolean isXPressed = false;
+    private boolean isCPressed = false;
 
     private static Field field;
     private static ArrayList<Entity> entities;
     private static Deque<Entity> intEnt;
-
-    // For debug
-    public static Field getField() {
-        return field;
-    }
 
     private void run() {
         init();
@@ -59,23 +55,20 @@ public class Main {
         long start_time;
         long last_time;
 
-//        render();
-//        processInput();
-
-        last_time = System.currentTimeMillis();;
+        last_time = System.currentTimeMillis();
         while (GameRenderer.windowShouldNotClose()) {
             start_time = System.currentTimeMillis();
 
             processInput();
             render();
-            processGameLogic(start_time - last_time);
+            processUnits(start_time - last_time);
 
             last_time = start_time;
             GameRenderer.pollEvents();
         }
     }
 
-    private void processGameLogic(long delta_time) {
+    private void processUnits(long delta_time) {
         entities.forEach(it -> it.process(delta_time));
     }
 
@@ -83,13 +76,14 @@ public class Main {
         GameRenderer.clearWindow();
 
         GameRenderer.renderBackground(isDebugMode, isDebugModePath);
+
         if (!isDebugMode) {
             if (!entities.isEmpty()) {
                 ArrayList<Entity> draw = entities;
                 draw.forEach(GameRenderer::renderEntity);
             }
 
-            if (isMouseSet) {
+            if (isMouseLeftPressed) {
                 GameRenderer.renderMouseBorder(cursorPosStart, cursorPosCurrent);
             }
         }
@@ -98,66 +92,107 @@ public class Main {
     }
 
     private void processInput() {
-        int state = GameRenderer.getKey(GLFW_KEY_ESCAPE);
-        if (state == GLFW_PRESS) {
-            GameRenderer.setWindowShouldClose();
+        cursorPosCurrent = GameRenderer.getCursorPos();
+
+        if (GameRenderer.getKey(GLFW_KEY_ESCAPE) == GLFW_PRESS) GameRenderer.setWindowShouldClose();
+
+        switch (GameRenderer.getKey(GLFW_KEY_S)) {
+            case GLFW_PRESS:
+                if (!isSPressed) {
+                    intEnt.forEach(Entity::stopEntity);
+                    isSPressed = true;
+                }
+                break;
+            case GLFW_RELEASE :
+                if (isSPressed) isSPressed = false;
+                break;
         }
 
-        state = GameRenderer.getKey(GLFW_KEY_S);
-        if (state == GLFW_PRESS) { intEnt.forEach(Entity::stopEntity); }
-
-        state = GameRenderer.getKey(GLFW_KEY_X);
-        if (state == GLFW_PRESS) {
-            if (!isXPressed) {
-                isDebugMode = !isDebugMode;
-                isXPressed = true;
-            }
+        switch (GameRenderer.getKey(GLFW_KEY_X)) {
+            case GLFW_PRESS:
+                if (!isXPressed) {
+                    isDebugMode = !isDebugMode;
+                    isXPressed = true;
+                }
+                break;
+            case GLFW_RELEASE :
+                if (isXPressed) isXPressed = false;
+                break;
         }
-        state = GameRenderer.getKey(GLFW_KEY_X);
-        if (state == GLFW_RELEASE && isXPressed) isXPressed = false;
 
-        state = GameRenderer.getKey(GLFW_KEY_C);
-        if (state == GLFW_PRESS) {
-            if (isDebugMode) {
-                if (!isCPressed) {
+        switch (GameRenderer.getKey(GLFW_KEY_C)) {
+            case GLFW_PRESS:
+                if (isDebugMode && !isCPressed) {
                     isDebugModePath = !isDebugModePath;
                     isCPressed = true;
                 }
-            }
+                break;
+            case GLFW_RELEASE :
+                if (isCPressed) isCPressed = false;
+                break;
         }
-        state = GameRenderer.getKey(GLFW_KEY_C);
-        if (state == GLFW_RELEASE && isCPressed) isCPressed = false;
 
-        state = GameRenderer.getMouseKey(GLFW_MOUSE_BUTTON_LEFT);
-        if (state == GLFW_PRESS) {
-            if (!isMouseSet) {
-                isMouseSet = true;
-                cursorPosStart = cursorPosCurrent;
-            }
-        } else if (state == GLFW_RELEASE) {
-            if (isMouseSet) {
-                while (!intEnt.isEmpty()) intEnt.pop().setState(Entity.STATE.STANDING);
-
-                for (Entity i : entities) {
-                    if (i.inRange(cursorPosCurrent, cursorPosStart)) {
-                        intEnt.push(i);
-                        i.setState(Entity.STATE.PLAYERED);
-                    }
+        switch (GameRenderer.getMouseKey(GLFW_MOUSE_BUTTON_LEFT)) {
+            case GLFW_PRESS:
+                if (!isMouseLeftPressed) {
+                    cursorPosStart = cursorPosCurrent;
+                    isMouseLeftPressed = true;
                 }
-            }
-            isMouseSet = false;
+                break;
+            case GLFW_RELEASE :
+                if (isMouseLeftPressed){
+                    while (!intEnt.isEmpty()){
+                        intEnt.pop().setState(Entity.STATE.CHILL);
+                    }
+
+                    for (Entity i : entities) {
+                        if (i.inRange(cursorPosCurrent, cursorPosStart)) {
+                            intEnt.push(i);
+                            i.setState(Entity.STATE.PLAYER);
+                        }
+                    }
+
+                    isMouseLeftPressed = false;
+                }
+                break;
         }
 
-        state = GameRenderer.getMouseKey(GLFW_MOUSE_BUTTON_RIGHT);
-        if (state == GLFW_PRESS) {
-            intEnt.forEach(it -> it.generatePath(cursorPosCurrent));
-        }
-        state = GameRenderer.getMouseKey(GLFW_MOUSE_BUTTON_MIDDLE);
-        if (state == GLFW_PRESS) {
-            intEnt.forEach(it -> it.setPosFromMouse(cursorPosCurrent));
+        switch (GameRenderer.getMouseKey(GLFW_MOUSE_BUTTON_RIGHT)) {
+            case GLFW_PRESS:
+                if (!isMouseRightPressed) {
+                    System.out.println(Field.getCellFromMousePos(cursorPosCurrent).x);
+                    System.out.println(Field.getCellFromMousePos(cursorPosCurrent).y);
+                    System.out.println("\n");
+
+                    isMouseRightPressed = true;
+                }
+                break;
+            case GLFW_RELEASE :
+                if (isMouseRightPressed){
+
+                    isMouseRightPressed = false;
+                }
+                break;
         }
 
-        cursorPosCurrent = GameRenderer.getCursorPos();
+        switch (GameRenderer.getMouseKey(GLFW_MOUSE_BUTTON_MIDDLE)) {
+            case GLFW_PRESS:
+                if (intEnt.isEmpty() && !isMouseMiddlePressed) {
+                    System.out.println(Field.getCellFromMousePos(cursorPosCurrent).x);
+                    System.out.println(Field.getCellFromMousePos(cursorPosCurrent).y);
+                    System.out.println("\n");
+
+                    isMouseMiddlePressed = true;
+                } else {
+                    intEnt.forEach(it -> it.setPosFromMouse(cursorPosCurrent));
+                }
+                break;
+            case GLFW_RELEASE :
+                if (isMouseMiddlePressed){
+                    isMouseMiddlePressed = false;
+                }
+                break;
+        }
     }
 
     public static void main(String[] args) {
