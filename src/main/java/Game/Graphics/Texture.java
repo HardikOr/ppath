@@ -14,12 +14,11 @@ import static org.lwjgl.opengl.GL30.glGenerateMipmap;
 public class Texture {
     private int id;
 
-    public Texture() { id = 0; }
     private Texture(int id) { this.id = id; }
 
     static Texture genTexture(String fileName) throws IOException {
         //load png file
-        PNGDecoder decoder = null;
+        PNGDecoder decoder; // default null
 
         decoder = new PNGDecoder(new FileInputStream(new File(fileName)));
 

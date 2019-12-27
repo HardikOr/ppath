@@ -2,7 +2,6 @@ package Game.Graphics;
 
 import Game.Logic.Entity;
 import Game.Logic.Field;
-import Game.Logic.Graph;
 import Game.Utilities.Utils;
 import org.joml.Vector2d;
 import org.joml.Vector2i;
@@ -15,8 +14,8 @@ import java.io.File;
 
 import java.io.IOException;
 import java.nio.IntBuffer;
-import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
@@ -25,7 +24,7 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
-public class GameRenderer {
+public class GameRender {
     private static long window;
     private static Map<Integer, Texture> textureMap;
 
@@ -113,8 +112,8 @@ public class GameRenderer {
     public static Vector2d getCursorPos() {
         double[] cursor_x = new double[1], cursor_y = new double[1];
 
-        glfwGetCursorPos(GameRenderer.window, cursor_x, cursor_y);
-        return new Vector2d((cursor_x[0] / Utils.H * 2 - 1), (1 - cursor_y[0] / Utils.H * 2));
+        glfwGetCursorPos(GameRender.window, cursor_x, cursor_y);
+        return new Vector2d((cursor_x[0] / Utils.W * 2 - 1), (1 - cursor_y[0] / Utils.H * 2));
     }
 
     public static void loadTextures() {
@@ -130,7 +129,7 @@ public class GameRenderer {
             }
         } catch (IOException ex) {
             System.err.println("Missing textures!");
-            GameRenderer.destroy();
+            GameRender.destroy();
             System.exit(-1);
         }
         System.out.println("All textures loaded successfully!");
@@ -168,7 +167,9 @@ public class GameRenderer {
         glVertex2d((x + Utils.xSize) / Utils.W - 1, -(y + Utils.ySize) / Utils.H + 1);
     }
 
-    public static void renderBackground(boolean isDebugMode, boolean isDebugModePath) {
+    public static void renderBackground(boolean isDebugMode, Vector2d mousePos) {
+        Vector2i posM = Utils.cellFromMOTO(mousePos);
+
         for (int zY = 0; zY < Utils.yZones; zY++) {
             for (int zX = 0; zX < Utils.xZones; zX++) {
                 for (int posY = 0; posY < Utils.zoneSize; posY++) {
@@ -181,25 +182,27 @@ public class GameRenderer {
                         else
                             bindTexture(1);
 
+                        glColor4d(1, 1, 1, 1);
+
+                        if (posM.x == x && posM.y == y) {
+                            glColor4dv(Utils.Color.mouseCell);
+                        }
+
+                        if (Field.getZone(zX, zY).getCell(posX, posY) == Field.CELL.OBSTACLE)
+                            glColor4d(1, 1, 1, 1);
+
                         if (isDebugMode) {
                             if (Field.getZone(zX, zY).getId() % 2 == 0)
                                 glColor4d(0.3, 1, 1, 1);
                             else
                                 glColor4d(0.7, 1, 1, 1);
 
-                            if (isDebugModePath) {
-                                if (Field.getZone(zX, zY).getDebugCells()[posY][posX] == 1)
-                                    glColor4d(1, 1, 0, 1);
-                            }
-
-                            if (Field.getZone(zX, zY).getCell(posX, posY) == Field.CELL.OBSTICLE)
+                            if (Field.getZone(zX, zY).getCell(posX, posY) == Field.CELL.OBSTACLE)
                                 glColor4d(0.3, 0.3, 0.3, 1);
 
                             if (Field.getGraph().inV(new Vector2i(x, y))) {
                                 glColor4d(0, 0.7, 0, 1);
                             }
-                        } else {
-                            glColor4d(1, 1, 1, 1);
                         }
 
                         glEnable(GL_TEXTURE_2D);
@@ -243,7 +246,23 @@ public class GameRenderer {
         glEnd();
     }
 
-    public static void renderPath(Deque<Graph.Vertex> path) {
-        ;
+    public static void renderPath(List<Vector2i> path, int posPath, Vector2d pos) {
+        if (!path.isEmpty()) {
+            glColor4dv(Utils.Color.entityPath);
+
+            glLineWidth(3);
+            glBegin(GL_LINE_STRIP);
+
+            if (!Utils.posFromCell(path.get(posPath)).equals(pos)) {
+                glVertex2d(pos.x / Utils.W * 2, pos.y / Utils.H * 2);
+            }
+
+            for (int i = posPath; i < path.size(); i++) {
+                Vector2d vec = Utils.posFromCell(path.get(i));
+                glVertex2d(vec.x / Utils.W * 2, vec.y / Utils.H * 2);
+            }
+
+            glEnd();
+        }
     }
 }

@@ -1,61 +1,52 @@
 package Game.Logic;
 
 import org.joml.Vector2i;
-import org.lwjgl.system.CallbackI;
 
-import java.rmi.MarshalledObject;
 import java.util.*;
 
 public class Graph {
     public static class Vertex {
-        private static int id = sid++;
         private Vector2i posA;
         private Vector2i posB;
         private int zoneA;
         private int zoneB;
+        private Map<Vertex, Field.LinePath> paths = new HashMap<>();
 
-        Vertex() {}
+        public void setPath(Vertex vertex, Field.LinePath paths) {
+            this.paths.put(vertex, paths);
+        }
+
+        public Field.LinePath getPath(Vertex vertex) {
+            return paths.get(vertex);
+        }
+
+        public boolean hasNotPaths() {
+            return paths.isEmpty();
+        }
+
+        public Map<Vertex, Field.LinePath> getPaths() {
+            return paths;
+        }
+
+        Vertex(Vector2i pos, int zone) {
+            this.posA = pos;
+            this.posB = pos;
+            this.zoneA = zone;
+            this.zoneB = zone;
+        }
+
         Vertex(Vector2i posA, int zoneA, Vector2i posB, int zoneB) {
             this.posA = posA;
             this.zoneA = zoneA;
             this.posB = posB;
             this.zoneB = zoneB;
         }
-        Vertex(Vertex v) {
-            this.posA = v.posA;
-            this.zoneA = v.zoneA;
-            this.posB = v.posB;
-            this.zoneB = v.zoneB;
-        }
 
-        void setVertex(Vertex v) {
-            this.posA = v.posA;
-            this.zoneA = v.zoneA;
-            this.posB = v.posB;
-            this.zoneB = v.zoneB;
-        }
-
-        static int getMutualZone(Vertex a, Vertex b){
-            return a.zoneB == b.zoneB || a.zoneB == b.zoneA ? a.zoneB : a.zoneA == b.zoneA || a.zoneA == b.zoneB ? a.zoneA : -1;
-        }
-
-        Vector2i getPosA() {
-            return posA;
-        }
-        Vector2i getPosB() {
-            return posB;
-        }
         Vector2i getPosByZone(int zone) {
             if (zone == zoneA) return posA;
             if (zone == zoneB) return posB;
             throw new NoSuchElementException();
         }
-        Vector2i getPosBySecondZone(int zone) {
-            if (zone == zoneA) return posB;
-            return posA;
-        }
-
-        int getId() { return id; }
 
         @Override
         public boolean equals(Object o) {
@@ -67,7 +58,7 @@ public class Graph {
         }
     }
 
-    class VertexAdd implements Comparable {
+    static class VertexAdd implements Comparable {
         private Vertex vertex;
         private int distance;
         private Vertex parent;
@@ -95,21 +86,34 @@ public class Graph {
             end = e;
         }
 
-        public void setPoints(Vertex a, Vertex b) {
-            begin = a;
-            end = b;
+        Edge(Edge edge) {
+            this.weight = edge.weight;
+            this.begin = edge.begin;
+            this.end = edge.end;
         }
     }
 
-    private static int sid = 0;
+    public Set<Vertex> getVertices() {
+        return vertices;
+    }
 
     private Set<Vertex> vertices;
-
     private Map<Vertex, Set<Edge>> connections;
 
     Graph() {
         vertices = new HashSet<>();
         connections = new HashMap<>();
+    }
+
+    Graph(Graph graph) {
+        vertices = new HashSet<>(graph.vertices);
+        connections = new HashMap<>();
+
+        for (Map.Entry<Vertex, Set<Edge>> set : graph.connections.entrySet()) {
+            Set<Edge> newSet = new HashSet<>();
+            set.getValue().forEach(it -> newSet.add(new Edge(it)));
+            this.connections.put(set.getKey(), newSet);
+        }
     }
 
     private Set<Vertex> getNei(Vertex v) {
@@ -129,38 +133,36 @@ public class Graph {
         return ans;
     }
 
-    public Vertex getVertex(Vector2i a, Vector2i b) {
-        for (Vertex v : vertices) {
-            if (v.getPosA().equals(a) && v.getPosB().equals(b) || (v.getPosA().equals(b) && v.getPosB().equals(a)))
-                return v;
-        }
-        throw new NoSuchElementException();
-    }
-
     private int getConWeight(Vertex a, Vertex b) {
         Set<Edge> edges = connections.get(a);
 
         for (Edge edge : edges) {
-            if (edge.begin.equals(b))
-                return edge.weight;
             if (edge.end.equals(b))
                 return edge.weight;
         }
-        throw new NoSuchElementException();
+        return -1;
     }
 
     void addVertex(Vertex v) {
         vertices.add(v);
     }
+    Vertex getVertexOrDefault(Vector2i pos, int zoneId) {
+        for (Vertex i : vertices) {
+            if (i.posA.equals(pos) || i.posB.equals(pos))
+                return i;
+        }
+        return new Vertex(pos, zoneId);
+    }
 
     void addConnection(Vertex start, Vertex end, int weight) {
-        Set<Edge> aV = connections.getOrDefault(start, new HashSet<>());
-        aV.add(new Edge(weight, start, end));
-        connections.put(start, aV);
+        addOneWayConnection(start, end, weight);
+        addOneWayConnection(end, start, weight);
+    }
 
-        Set<Edge> bV = connections.getOrDefault(end, new HashSet<>());
-        bV.add(new Edge(weight, end, start));
-        connections.put(end, bV);
+    private void addOneWayConnection(Vertex start, Vertex end, int weight) {
+        Set<Edge> set = connections.getOrDefault(start, new HashSet<>());
+        set.add(new Edge(weight, start, end));
+        connections.put(start, set);
     }
 
     public boolean inV(Vector2i coord) {
@@ -173,7 +175,7 @@ public class Graph {
 
     public Deque<Vertex> findShortPath(Vertex begin, Vertex end) { // Dijkstra
         Map<Vertex, VertexAdd> map = new HashMap<>();
-        for (Vertex i : vertices) {
+        for (Vertex i : this.vertices) {
             map.put(i, new VertexAdd(i, Integer.MAX_VALUE, null));
         }
 

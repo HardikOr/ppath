@@ -1,13 +1,11 @@
 package Game.Logic;
 
-import Game.Graphics.GameRenderer;
 import Game.Utilities.Utils;
 import org.joml.Vector2d;
 import org.joml.Vector2i;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 
 public class Entity {
     public enum STATE{
@@ -22,20 +20,20 @@ public class Entity {
     private double radius;
     private int entityId;
     private STATE state;
+
     private List<Vector2i> path;
+
+    public int getPathPos() {
+        return pathPos;
+    }
+
+    private int pathPos = 0;
 
     public void setMoving(boolean moving) {
         isMoving = moving;
     }
 
     private boolean isMoving = false;
-    private boolean havePath = false;
-
-    public void setHavePath(boolean havePath) {
-        this.havePath = havePath;
-    }
-
-    private ListIterator pathTile;
 
     private boolean shouldExist = true;
 
@@ -45,14 +43,14 @@ public class Entity {
         entityId = id++;
         state = STATE.CHILL;
         velocity = speed;
-        path = new LinkedList<>();
+        path = new ArrayList<>();
     }
 
-    public Entity(Vector2d pos) {
-        this(pos, 60, 10);
+    public Entity(Vector2d pos, double r) {
+        this(pos, r, 20);
     }
     public Entity(double x, double y, double r) {
-        this(new Vector2d(x, y), r, 10);
+        this(new Vector2d(x, y), r, 20);
     }
     public Entity(double x, double y, double r, double speed) {
         this(new Vector2d(x, y), r, speed);
@@ -72,9 +70,6 @@ public class Entity {
         pos.y = y;
     }
 
-    public double getVelocity() { return velocity; }
-    public void setVel(double vel) { this.velocity = vel; }
-
     public void setState(STATE state) { this.state = state; }
     public STATE getState() { return state; }
 
@@ -86,45 +81,52 @@ public class Entity {
     }
 
     public List<Vector2i> getPath() { return path; }
-    public void setPath(List<Vector2i> path) {
-        this.path = path;
-        isMoving = true;
-    }
 
     public void setPosFromMouse(Vector2d mouse) {
         pos.x = mouse.x * Utils.W / 2;
         pos.y = mouse.y * Utils.H / 2;
 
         isMoving = false;
-        path = new LinkedList<>();
+        pathPos = 0;
+        path = new ArrayList<>();
     }
 
     public void stopEntity() {
         isMoving = false;
     }
 
-    public void generatePath(Vector2d curPos) {
-        ;
+    public void generatePath(Vector2d end) {
+        Vector2i pos2i = Utils.cellFromPos(pos);
+        Vector2i mouse2i = Utils.cellFromMOTO(end);
+        pathPos = 0;
+        path = Field.generateCellPath(pos2i, mouse2i);
+        isMoving = true;
+
+//        Field.debugPath(path);
     }
 
     public void process(long time) {
         if (isMoving) {
+            if (!path.isEmpty()) {
+                if (pathPos < path.size()) {
+                    Vector2d dir = new Vector2d(Utils.posFromCell(path.get(pathPos)).sub(pos));
+                    double len = dir.length();
+                    double move = velocity * time / 200;
 
+                    if (move > len) {
+                        pos = new Vector2d(Utils.posFromCell(path.get(pathPos)));
+                        pathPos++;
+
+                        if (pathPos >= path.size()) {
+                            path = new ArrayList<>();
+                            pathPos = 0;
+                            isMoving = false;
+                        }
+                    } else {
+                        pos.add(dir.normalize().mul(move));
+                    }
+                }
+            }
         }
-//            if (pos.equals(path)) {
-//                isMoving = false;
-//            } else {
-//                Vector2d dir = new Vector2d(path);
-//                dir.sub(pos);
-//                double len = dir.length();
-//                double move = velocity * time / 200;
-//
-//                if (move > len) {
-//                    pos = new Vector2d(path);
-//                } else {
-//                    pos.add(dir.normalize().mul(move));
-//                }
-//            }
-//            path = Field.;
     }
 }
