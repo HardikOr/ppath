@@ -1,6 +1,7 @@
 package Game.Logic;
 
 import Game.Utilities.Utils;
+import org.joml.Vector2d;
 import org.joml.Vector2i;
 
 import java.io.BufferedReader;
@@ -146,6 +147,165 @@ public class Field {
 //        }
 //    }
 
+    private static int getY(double x, Vector2d start, Vector2i line, int stepY) {
+        if (stepY == 1) return (int) (Math.floor((double) line.y / line.x * (x - start.x) + start.y));
+        else return (int) (Math.ceil((double) line.y / line.x * (x - start.x) + start.y));
+    }
+
+    private static int getX(double y, Vector2d start, Vector2i line) {
+        return (int) ((double) line.x / line.y * (y - start.y) + start.x);
+    }
+
+    /*
+    s.x = (int) (start.x - Math.abs(start.x - (int) start.x));
+            s.y = (int) (start.y - Math.abs(start.y - (int) start.y));
+
+            System.out.println("LINEX: " + line.x);
+            System.out.println("LINEY: " + line.y);
+            System.out.println("STARTX: " + start.x + " STARTY: " + start.y);
+
+            System.out.println("X:" + start.x);
+            System.out.println("Y: " + getY(start.x, start, line));
+            System.out.println("Y + 1: " + getY(s.x + 1, start, line));
+            System.out.println("\n");
+
+            for (int y = getY(start.x, start, line); Math.abs(y) <= Math.abs(getY(s.x + 1, start, line)); y += stepY) {
+                if (getCellBAC(s.x, y) == OBSTACLE) return false;
+            }
+
+            for (int x = 1; x < Math.abs(line.x); x++) {
+                double newX = s.x + x * stepX;
+                System.out.println("X:" + (newX - stepX * Math.abs(newX - (int) newX)));
+                System.out.println("Y: " + getY(newX, start, line));
+                System.out.println("Y + 1: " + getY(newX + stepX, start, line));
+                System.out.println("\n");
+                for (int y = getY(newX, start, line); Math.abs(y) <= Math.abs(getY(newX + stepX, start, line)); y += stepY) {
+                    if (getCellBAC((int) (newX - stepX * Math.abs(newX - (int) newX)), y) == OBSTACLE) return false;
+                }
+            }
+
+            System.out.println("X:" + line.x);
+            System.out.println("Y: " + getY(s.x + line.x, start, line));
+            System.out.println("Y + 1: " + getY(start.x + line.x, start, line));
+            System.out.println("\n");
+
+            for (int y = getY(s.x + line.x, start, line); Math.abs(y) <= Math.abs(getY(start.x + line.x, start, line)); y += stepY) {
+                if (getCellBAC(s.x + line.x, y) == OBSTACLE) return false;
+            }
+     */
+
+    private static boolean byX(Vector2d start, Vector2i line, int stepX, int stepY) {
+        int sx = (int) (stepX == 1 ? Math.floor(start.x) : Math.ceil(start.x));
+        int sy = (int) (stepY == 1 ? Math.floor(start.y) : Math.ceil(start.y));
+
+        System.out.println("LX: " + line.x + " LY: " + line.y);
+        System.out.println("STARTX: " + start.x + " STARTY: " + start.y);
+        System.out.println("SX: " + sx + " SY: " + sy);
+        System.out.println("\n");
+
+        System.out.println("X:" + start.x);
+        System.out.println("Y: " + getY(start.x, start, line, stepY));
+        System.out.println("X + 1: " + (sx + stepX));
+        System.out.println("Y + 1: " + getY(sx + stepX, start, line, stepY));
+        System.out.println("\n");
+
+        for (int y = getY(start.x, start, line, stepY); Math.abs(y) <= Math.abs(getY(sx + stepX, start, line, stepY)); y += stepY) {
+            if (getCellBAC((int) start.x, y) == OBSTACLE) return false;
+        }
+
+        for (int x = 1; x < Math.abs(line.x); x++) {
+            double newX = sx + x * stepX;
+            int inewX = (int) (stepX == 1 ? Math.floor(newX) : Math.ceil(newX));
+
+            System.out.println("X:" + newX);
+            System.out.println("iX:" + inewX);
+            System.out.println("Y: " + getY(newX, start, line, stepY));
+            System.out.println("X + 1: " + (newX + stepX));
+            System.out.println("Y + 1: " + getY(newX + stepX, start, line, stepY));
+            System.out.println("\n");
+
+            for (int y = getY(newX, start, line, stepY); Math.abs(y) <= Math.abs(getY(newX + stepX, start, line, stepY)); y += stepY) {
+                if (getCellBAC((int) (start.x + x * stepX), y) == OBSTACLE) return false;
+            }
+        }
+
+        System.out.println("X:" + (sx + line.x));
+        System.out.println("Y: " + getY(sx + line.x, start, line, stepY));
+        System.out.println("X + 1: " + (start.x + line.x));
+        System.out.println("Y + 1: " + getY(start.x + line.x, start, line, stepY));
+        System.out.println("\n");
+
+        for (int y = getY(sx + line.x, start, line, stepY); Math.abs(y) <= Math.abs(getY(start.x + line.x, start, line, stepY)); y += stepY) {
+            if (getCellBAC((int) start.x + line.x, y) == OBSTACLE) return false;
+        }
+
+        return true;
+    }
+
+    private static boolean hasLineWay(Vector2d start, Vector2i line) {
+        int stepX = Integer.signum(line.x);
+        int stepY = Integer.signum(line.y);
+
+//        System.out.println(line.x);
+//        System.out.println(line.y);
+
+        Vector2i s = new Vector2i((int) start.x, (int) start.y);
+
+        if (line.x == 0) {
+            for (int y = s.y; y != s.y + line.y; y += stepY)
+                if (getCellBAC(s.x, y) == OBSTACLE) return false;
+        }
+        else if (line.y == 0) {
+            for (int x = s.x; x != s.x + line.x; x += stepX)
+                if (getCellBAC(x, s.y) == OBSTACLE) return false;
+        }
+        else if (Math.abs(line.x) < Math.abs(line.y)) {
+            if (!byX(start, line, stepX, stepY)) return false;
+        }
+        else {
+            for (int y = 0; y <= Math.abs(line.y); y++) {
+                double newY = start.y + y * stepY;
+                for (int x = getX(newY, start, line); x <= getX(newY + stepY, start, line); x += stepX) {
+                    if (getCellBAC(x, (int) newY) == OBSTACLE) return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static boolean hasWay(Vector2i start, Vector2i end) {
+        Vector2d startNew = new Vector2d();
+        startNew.x = 0.5 + start.x;
+        startNew.y = 0.5 + start.y;
+
+        Vector2i line = new Vector2i(end).sub(start);
+
+        if (hasLineWay(startNew, line))
+            return true;
+        return false;
+    }
+
+    public static List<Vector2i> simplifyPath(List<Vector2i> oldPath) {
+        List<Vector2i> path = new ArrayList<>();
+        int begin = 0;
+
+        if (!oldPath.isEmpty()) {
+            path.add(oldPath.get(0));
+
+            if (hasWay(oldPath.get(0), oldPath.get(oldPath.size() - 1))) {
+                path.add(oldPath.get(oldPath.size() - 1));
+            }
+        }
+
+//        for (int i = oldPath.size() - 1; i > 1; i--) {
+//
+//            path.add(oldPath.get(i));
+//        }
+
+        return path;
+    }
+
     private static List<Vector2i> generateGraphPath(Graph graph, Graph.Vertex start, Graph.Vertex end) {
         Deque<Graph.Vertex> path = graph.findShortPath(start, end);
         List<Vector2i> list = new ArrayList<>();
@@ -180,7 +340,7 @@ public class Field {
             return new ArrayList<>();
 
         List<Vector2i> nearPath = new ArrayList<>();
-        List<Vector2i> graphPath;
+        List<Vector2i> graphPath = new ArrayList<>();
 
         int[][] masS = generatePathTableBAC(start.x, start.y);
         int[][] masE = generatePathTableBAC(exit.x, exit.y);
@@ -204,10 +364,23 @@ public class Field {
         if (startV.hasNotPaths() || exitV.hasNotPaths())
             return new ArrayList<>();
 
-        graphPath = generateGraphPath(graphCell, startV, exitV);
+        Deque<Graph.Vertex> path = graphCell.findShortPath(startV, exitV);
+
+        Graph.Vertex a = path.removeLast();
+
+        int lastZone = 0;
+        while (!path.isEmpty()) {
+            Graph.Vertex b = path.removeLast();
+            graphPath.addAll(b.getPath(a).path);
+            lastZone = a.getMutualZone(b);
+            a = b;
+        }
+
+        if (lastZone != zoneE.id) graphPath.add(exit);
 
         if (nearPath.isEmpty()) return graphPath;
         if (nearPath.size() < graphPath.size()) return nearPath;
+
         return graphPath;
     }
 

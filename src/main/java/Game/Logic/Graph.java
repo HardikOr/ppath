@@ -42,9 +42,23 @@ public class Graph {
             this.zoneB = zoneB;
         }
 
+        int getMutualZone(Vertex vertex) {
+            if (this.zoneA == vertex.zoneA || this.zoneA == vertex.zoneB)
+                return this.zoneA;
+            if (this.zoneB == vertex.zoneA || this.zoneB == vertex.zoneB)
+                return this.zoneB;
+            throw new NoSuchElementException();
+        }
+
         Vector2i getPosByZone(int zone) {
             if (zone == zoneA) return posA;
             if (zone == zoneB) return posB;
+            throw new NoSuchElementException();
+        }
+
+        Vector2i getPosByDifZone(int zone) {
+            if (zone == zoneA) return posB;
+            if (zone == zoneB) return posA;
             throw new NoSuchElementException();
         }
 

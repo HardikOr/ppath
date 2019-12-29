@@ -20,6 +20,7 @@ public class Entity {
     private double radius;
     private int entityId;
     private STATE state;
+    private Vector2d dest;
 
     private List<Vector2i> path;
 
@@ -86,9 +87,8 @@ public class Entity {
         pos.x = mouse.x * Utils.W / 2;
         pos.y = mouse.y * Utils.H / 2;
 
-        isMoving = false;
-        pathPos = 0;
-        path = new ArrayList<>();
+        if (!path.isEmpty()) generatePath(dest);
+        else stopAndRemovePath();
     }
 
     public void stopEntity() {
@@ -98,11 +98,21 @@ public class Entity {
     public void generatePath(Vector2d end) {
         Vector2i pos2i = Utils.cellFromPos(pos);
         Vector2i mouse2i = Utils.cellFromMOTO(end);
+
+        dest = new Vector2d(end);
         pathPos = 0;
-        path = Field.generateCellPath(pos2i, mouse2i);
         isMoving = true;
+        path = Field.generateCellPath(pos2i, mouse2i);
+        path = Field.simplifyPath(path);
 
 //        Field.debugPath(path);
+    }
+
+    private void stopAndRemovePath() {
+        isMoving = false;
+        pathPos = 0;
+        path = new ArrayList<>();
+        dest = new Vector2d(pos);
     }
 
     public void process(long time) {
@@ -117,11 +127,7 @@ public class Entity {
                         pos = new Vector2d(Utils.posFromCell(path.get(pathPos)));
                         pathPos++;
 
-                        if (pathPos >= path.size()) {
-                            path = new ArrayList<>();
-                            pathPos = 0;
-                            isMoving = false;
-                        }
+                        if (pathPos >= path.size()) stopAndRemovePath();
                     } else {
                         pos.add(dir.normalize().mul(move));
                     }

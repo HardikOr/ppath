@@ -27,6 +27,7 @@ public class Utils {
         }};
         public static final double[] mouseBorder = new double[] {34 / 255d, 114 / 255d, 42 / 255d, 1};
         public static final double[] entityPath = new double[] {200 / 255d, 50 / 255d, 50 / 255d, 1};
+        public static final double[] entityPathEnd = new double[] {134 / 255d, 30 / 255d, 30 / 255d, 1};
         public static final double[] mouseCell = new double[] {129 / 255d, 216 / 255d, 187 / 255d, 1};
     }
 

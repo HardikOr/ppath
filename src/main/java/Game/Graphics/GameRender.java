@@ -263,6 +263,13 @@ public class GameRender {
             }
 
             glEnd();
+
+            glColor4dv(Utils.Color.entityPathEnd);
+            glPointSize(8);
+            glBegin(GL_POINTS);
+            Vector2d vec = Utils.posFromCell(path.get(path.size() - 1));
+            glVertex2d(vec.x / Utils.W * 2, vec.y / Utils.H * 2);
+            glEnd();
         }
     }
 }
